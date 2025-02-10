@@ -3,44 +3,76 @@
 ## Available Isolation Levels
 
 1. **Read Uncommitted**
-   - **Description:** The lowest isolation level where transactions may see uncommitted changes made by other transactions (i.e., dirty reads).
-   - **Consistency vs. Concurrency:**
-     - *Consistency:* Very low, as uncommitted (and possibly rolled-back) changes can be read.
-     - *Concurrency:* High, because minimal locking is performed.
+   - **Description:**
+     Allows transactions to read data that has not yet been committed by other transactions (dirty reads).
+   - **Consistency:**
+     Lowest consistency; transactions can see changes that might be rolled back.
+   - **Concurrency:**
+     Very high, due to minimal locking.
 
 2. **Read Committed**
-   - **Description:** Ensures that any data read is committed at the moment it is read; dirty reads are prevented. This is the default level in many databases.
-   - **Consistency vs. Concurrency:**
-     - *Consistency:* Prevents dirty reads but may allow non-repeatable reads and phantom reads.
-     - *Concurrency:* Good balance, allowing higher concurrency while still preventing the most egregious inconsistencies.
+   - **Description:**
+     Only committed data is visible. Dirty reads are prevented, but non-repeatable reads and phantom reads can occur.
+   - **Consistency:**
+     Provides a reasonable level of consistency for many applications.
+   - **Concurrency:**
+     Good balance between consistency and performance; widely used as a default isolation level.
 
 3. **Repeatable Read**
-   - **Description:** Guarantees that if a row is read twice in the same transaction, the data will not change (no non-repeatable reads). However, phantom reads (new rows appearing) can still occur.
-   - **Consistency vs. Concurrency:**
-     - *Consistency:* Stronger consistency than Read Committed since multiple reads within a transaction are consistent.
-     - *Concurrency:* May reduce concurrency compared to Read Committed due to the increased locking needed to maintain consistency.
+   - **Description:**
+     Ensures that if a row is read twice within the same transaction, the data remains the same (prevents non-repeatable reads). Phantom reads may still occur in some systems.
+   - **Consistency:**
+     Higher consistency than Read Committed.
+   - **Concurrency:**
+     Concurrency is reduced because locks may be held for the duration of the transaction to maintain repeatable reads.
 
 4. **Serializable**
-   - **Description:** The strictest isolation level. Transactions are executed in a way that the outcome is as if they were processed serially, one after the other.
-   - **Consistency vs. Concurrency:**
-     - *Consistency:* Highest consistency, preventing dirty reads, non-repeatable reads, and phantom reads.
-     - *Concurrency:* Lower concurrency since transactions might block each other and serialization errors (leading to rollbacks) can occur under heavy load.
+   - **Description:**
+     The strictest isolation level, where transactions execute in a manner equivalent to serial execution. Prevents dirty reads, non-repeatable reads, and phantom reads.
+   - **Consistency:**
+     Highest level of consistency.
+   - **Concurrency:**
+     Lowest concurrency, as it requires heavy locking and can lead to transaction rollbacks in high-contention scenarios.
 
 ## Impact on Consistency and Concurrency
-- **Higher Isolation Levels (e.g., Serializable):**
-  - *Consistency:* Provide the most robust consistency guarantees.
-  - *Concurrency:* Tend to reduce throughput and increase the chance of transaction rollbacks due to conflicts.
-- **Lower Isolation Levels (e.g., Read Uncommitted or Read Committed):**
-  - *Consistency:* Allow for higher concurrency but at the cost of potential read anomalies like dirty reads (in Read Uncommitted) or non-repeatable/phantom reads (in Read Committed).
-  - *Concurrency:* Generally offer higher throughput and less contention among transactions.
 
-# Changing Transaction Isolation Level in Rails
+- **Lower Isolation Levels (Read Uncommitted):**
+  - **Consistency:** May lead to data anomalies like dirty reads.
+  - **Concurrency:** Maximizes throughput by reducing locking.
+
+- **Intermediate Isolation Levels (Read Committed and Repeatable Read):**
+  - **Consistency:** Prevents dirty reads; Repeatable Read adds further consistency by avoiding non-repeatable reads.
+  - **Concurrency:** Offers a trade-off between data integrity and performance, with Repeatable Read generally locking more than Read Committed.
+
+- **Highest Isolation Level (Serializable):**
+  - **Consistency:** Ensures complete isolation and highest data integrity.
+  - **Concurrency:** Limits throughput due to strict locking and increased risk of transaction rollbacks in concurrent environments.
+
+# Changing the Transaction Isolation Level in Rails
 
 ## Using ActiveRecord Transaction Blocks
 
-Since Rails 4.2, you can specify the isolation level when starting a transaction. For example:
+Rails allows you to set the isolation level on a per-transaction basis with ActiveRecord. For example:
 
 ```ruby
 ActiveRecord::Base.transaction(isolation: :serializable) do
   # Your transactional code here
 end
+Supported Isolation Levels:
+The symbols you can use (e.g., :read_uncommitted, :read_committed, :repeatable_read, :serializable) depend on your database adapter. PostgreSQL, for instance, supports all these levels.
+Using Raw SQL Commands Within a Transaction
+You can also change the isolation level using a raw SQL command:
+
+ruby
+Copy
+ActiveRecord::Base.transaction do
+  ActiveRecord::Base.connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+  # Your transactional code here
+end
+Global or Connection-Level Settings
+Some database adapters allow you to configure a default isolation level in the connection settings or database configuration files. However, setting the isolation level per transaction is generally recommended for finer control.
+
+By understanding these isolation levels and how to configure them in Rails, you can better balance consistency and concurrency in your application based on its specific requirements.
+
+Copy
+```
