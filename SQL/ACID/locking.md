@@ -48,3 +48,43 @@ Relational databases use several locking mechanisms to maintain data consistency
   # Example using pessimistic locking:
   user = User.lock.find(1)
   user.update!(balance: user.balance - 100)
+Pros
+Immediate Consistency: Prevents concurrent modifications, eliminating the risk of update conflicts.
+Simplicity: Once the lock is acquired, you can safely assume no other transaction will interfere.
+Cons
+Reduced Concurrency: Locks held during long operations can block other transactions.
+Deadlocks: Increased risk of deadlocks if multiple transactions lock resources in different orders.
+When to Use
+High Contention Scenarios: When concurrent updates on the same data are very likely and conflicts must be avoided.
+Critical Operations: Where the cost of data inconsistency is high.
+Optimistic Locking
+Concept
+Optimistic Locking assumes conflicts are rare and does not lock data during read operations. Instead, it uses a version number (or timestamp) to detect if data has been modified before committing an update.
+Implementation in Rails
+Add a lock_version column to your model. Rails automatically increments this column on each update.
+ruby
+Copy
+# Example using optimistic locking:
+user = User.find(1)
+user.balance -= 100
+user.save!  # Raises ActiveRecord::StaleObjectError if another update occurred
+Pros
+High Concurrency: No locks are held during the reading phase, allowing many transactions to operate in parallel.
+Efficient for Low Contention: Best suited for scenarios where write conflicts are rare.
+Cons
+Conflict Resolution: When a conflict occurs, an exception is raised, and you must implement retry logic or inform the user.
+Not Ideal for High Contention: In environments with frequent concurrent updates, the overhead of handling conflicts may outweigh the benefits.
+When to Use
+Low Contention Scenarios: Applications with many reads and relatively few writes.
+Performance-Sensitive Applications: Where maximizing throughput is more critical than preventing occasional update conflicts.
+Impact on Performance and Concurrency
+Pessimistic Locking:
+
+Performance: Can decrease throughput because transactions must wait for locks to be released.
+Concurrency: Limits concurrent access, which may be acceptable in high-conflict situations where data integrity is paramount.
+Optimistic Locking:
+
+Performance: Generally provides better throughput as it avoids locking during reads.
+Concurrency: Allows more simultaneous transactions but requires handling conflict resolution when updates clash.
+Each locking strategy has its place. The choice between pessimistic and optimistic locking in Rails depends on your application's specific concurrency needs and the likelihood of conflicts in your data.
+```
