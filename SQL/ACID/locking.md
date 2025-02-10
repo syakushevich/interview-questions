@@ -49,25 +49,15 @@ Relational databases use several locking mechanisms to maintain data consistency
   An "intent exclusive" lock on a table indicates that a transaction intends to obtain exclusive locks on some rows within that table.
 
 ---
-
-# Concurrency Control: Pessimistic vs. Optimistic Locking in Rails
+# Pessimistic and Optimistic Locking in Rails
 
 ## Pessimistic Locking
 
-### Concept
-Pessimistic Locking involves locking a record as soon as it is read for update, so that no other transaction can modify it until the lock is released.
-
-### Implementation in Rails
-Use ActiveRecord's `lock` method or `with_lock` block.
-
-# Pessimistic and Optimistic Locking in Rails
 ```ruby
 # Example using pessimistic locking:
 user = User.lock.find(1)
 user.update!(balance: user.balance - 100)
 ```
-
-## Pessimistic Locking
 
 ### Overview
 Pessimistic Locking involves locking a record as soon as it is read for update, ensuring that no other transaction can modify it until the lock is released. This guarantees immediate consistency during the update process.
@@ -90,6 +80,9 @@ Pessimistic Locking involves locking a record as soon as it is read for update, 
 - **Critical Operations:**
   Use when the cost of data inconsistency is high and immediate consistency is crucial.
 
+---
+
+## Optimistic Locking
 
 ```ruby
 # Example using optimistic locking:
@@ -97,9 +90,6 @@ user = User.find(1)
 user.balance -= 100
 user.save!  # Raises ActiveRecord::StaleObjectError if another update occurred
 ```
----
-
-## Optimistic Locking
 
 ### Concept
 Optimistic Locking assumes that conflicts are rare. Instead of locking data during the read phase, it relies on a version number (or timestamp) to detect if data has been modified before committing an update. If the version has changed, it indicates a conflict and an error is raised.
